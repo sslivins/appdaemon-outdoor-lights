@@ -1,0 +1,45 @@
+outdoor_lights_off:
+  module: outdoor_lights_off
+  class: OutdoorLightsOff
+
+  # When to start trying to shut the lights off each night. At reset_time the
+  # app force-offs everything unconditionally (hard failsafe) and disarms.
+  off_time: "22:00:00"
+  reset_time: "04:00:00"
+
+  # Wait this long after everyone goes inside before actually turning off
+  # (debounces brief AP drop-offs). Set to 0 to turn off immediately.
+  clear_delay_seconds: 120
+
+  # Safety-net re-check interval while armed (AP presence is sampled).
+  poll_interval_seconds: 60
+
+  # Lights / switches to turn off. Matches your 4am failsafe device list,
+  # plus the waterfall pump.
+  lights:
+    - light.exterior_deck_wall_lights
+    - light.exterior_pond_wall_lights
+    - light.exterior_office_door
+    - light.exterior_outdoor_kitchen_wall_light
+    - light.exterior_outdoor_kitchen_cooking_light
+    - switch.exterior_string_lights
+    - switch.pond_waterfall_pump             # the waterfall
+
+  presence:
+    # Any of these doors being open = someone is outside.
+    door_sensors:
+      - entity: binary_sensor.kitchen_double_sliding_doors
+        open_state: "on"
+      - entity: binary_sensor.kitchen_door
+        open_state: "on"
+
+    # A household phone connected to the backyard AP = someone is outside.
+    ap_presence:
+      ap_mac: "ac:8b:a9:de:1a:68"
+      person_entities:
+        - person.stefan_slivinski
+        - person.megan
+        - person.mackenzie
+        - person.nadia
+        - person.natalie
+        - person.eric
