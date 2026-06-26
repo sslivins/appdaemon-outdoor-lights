@@ -29,9 +29,9 @@ outdoor_lights_off:
   presence:
     # Any of these doors being open = someone is outside.
     door_sensors:
-      - entity: binary_sensor.kitchen_double_sliding_doors
+      - entity: binary_sensor.storage_room_alarm_panel_pro_zone_12  # Double Kitchen Door
         open_state: "on"
-      - entity: binary_sensor.kitchen_door
+      - entity: binary_sensor.storage_room_alarm_panel_pro_zone_1   # Single Kitchen Door
         open_state: "on"
 
     # A household phone connected to the backyard AP = someone is outside.
