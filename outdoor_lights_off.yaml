@@ -9,7 +9,7 @@ outdoor_lights_off:
 
   # Wait this long after everyone goes inside before actually turning off
   # (debounces brief AP drop-offs). Set to 0 to turn off immediately.
-  clear_delay_seconds: 120
+  clear_delay_seconds: 420
 
   # Safety-net re-check interval while armed (AP presence is sampled).
   poll_interval_seconds: 60
