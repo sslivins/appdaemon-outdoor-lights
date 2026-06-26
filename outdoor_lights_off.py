@@ -49,6 +49,9 @@ class OutdoorLightsOff(hass.Hass):
         self.ap_mac = str(ap.get("ap_mac", "")).lower()
         self.person_entities = self._as_list(ap.get("person_entities", []))
 
+        # --- Optional AP-presence debug scan ----------------------------
+        self.ap_debug = bool(self.args.get("ap_debug", False))
+
         # --- Runtime state ----------------------------------------------
         self.armed = False          # True between off_time and reset_time
         self._pending_handle = None  # debounce timer handle
@@ -65,6 +68,14 @@ class OutdoorLightsOff(hass.Hass):
         # rather than subscribe to since it is derived from many trackers).
         self.run_every(self._poll, self.datetime() + timedelta(seconds=self.poll_interval),
                        self.poll_interval)
+
+        # Optional diagnostic: continuously log who is seen on the backyard AP
+        # (runs regardless of arm state so you can test by walking outside).
+        if self.ap_debug:
+            interval = int(self.args.get("ap_debug_interval_seconds", 20))
+            self.run_every(self._ap_scan_debug,
+                           self.datetime() + timedelta(seconds=2), interval)
+            self.log("AP debug scan enabled (every %ds)." % interval)
 
         # If AppDaemon (re)starts after the off-time but before the reset
         # time, arm immediately so a restart doesn't skip the night.
@@ -191,6 +202,23 @@ class OutdoorLightsOff(hass.Hass):
                 if mac and str(mac).lower() == self.ap_mac:
                     return True
         return False
+
+    def _ap_scan_debug(self, kwargs):
+        """Log which household devices are currently on the target AP."""
+        matched = []
+        for person in self.person_entities:
+            trackers = self.get_state(person, attribute="device_trackers") or []
+            for tracker in trackers:
+                mac = self.get_state(tracker, attribute="ap_mac")
+                if mac and str(mac).lower() == self.ap_mac:
+                    matched.append("%s (%s)" % (person, tracker))
+        open_doors = [d["entity"] for d in self.door_sensors
+                      if self.get_state(d["entity"]) == d["open_state"]]
+        self.log("[ap-scan] on backyard AP (%s): %s | open doors: %s | someone_outside=%s"
+                 % (self.ap_mac,
+                    ", ".join(matched) if matched else "none",
+                    ", ".join(open_doors) if open_doors else "none",
+                    self.someone_outside()))
 
     # ------------------------------------------------------------------ #
     # Helpers

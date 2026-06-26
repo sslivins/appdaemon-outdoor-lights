@@ -44,3 +44,8 @@ outdoor_lights_off:
         - person.nadia
         - person.natalie
         - person.eric
+
+  # Diagnostic: log who is seen on the backyard AP every N seconds, regardless
+  # of arm state. Set to false once you've confirmed detection works.
+  ap_debug: true
+  ap_debug_interval_seconds: 20
