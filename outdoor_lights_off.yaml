@@ -1,6 +1,7 @@
 outdoor_lights_off:
   module: outdoor_lights_off
   class: OutdoorLightsOff
+  log: outdoor_lights_off_log
 
   # When to start trying to shut the lights off each night. At reset_time the
   # app force-offs everything unconditionally (hard failsafe) and disarms.

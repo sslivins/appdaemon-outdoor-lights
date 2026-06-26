@@ -36,6 +36,27 @@ No entity IDs are hardcoded in the Python — everything comes from the YAML.
 AppDaemon auto-discovers `outdoor_lights_off.yaml` and loads
 `outdoor_lights_off.py`. No extra Python dependencies are required.
 
+## Logging (optional)
+
+The app config sets `log: outdoor_lights_off_log` so its output goes to a
+dedicated, rotating log file. To enable that, add a matching logger to the
+`logs:` section of your **`appdaemon.yaml`**:
+
+```yaml
+logs:
+  outdoor_lights_off_log:
+    name: OutdoorLights
+    filename: /conf/apps/outdoor_lights_off/outdoor_lights_off.log
+    log_size: 1048576       # 1 MB per file
+    log_generations: 10     # keep 10 rotated files
+    format: "{asctime}.{msecs:03.0f} {levelname:<7} {message}"
+    date_format: "%Y-%m-%d %H:%M:%S"
+```
+
+Changes to `appdaemon.yaml` require an AppDaemon restart. If you'd rather not
+add a dedicated logger, just remove the `log:` line from
+`outdoor_lights_off.yaml` and the app logs to the main AppDaemon log.
+
 ## Configuration (`outdoor_lights_off.yaml`)
 
 | Key | What it is |
