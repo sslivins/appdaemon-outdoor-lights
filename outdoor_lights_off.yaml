@@ -2,6 +2,11 @@ outdoor_lights_off:
   module: outdoor_lights_off
   class: OutdoorLightsOff
   log: outdoor_lights_off_log
+  global_dependencies:
+    - home_lib
+
+  # New: arbitration app this sweep routes its offs through.
+  controller: device_controller
 
   # When to start trying to shut the lights off each night. At reset_time the
   # app force-offs everything unconditionally (hard failsafe) and disarms.
@@ -29,14 +34,14 @@ outdoor_lights_off:
   presence:
     # Any of these doors being open = someone is outside.
     door_sensors:
-      - entity: binary_sensor.storage_room_alarm_panel_pro_zone_12  # Double Kitchen Door
+      - entity: binary_sensor.storage_room_alarm_panel_pro_double_kitchen_door
         open_state: "on"
-      - entity: binary_sensor.storage_room_alarm_panel_pro_zone_1   # Single Kitchen Door
+      - entity: binary_sensor.storage_room_alarm_panel_pro_single_kitchen_door
         open_state: "on"
 
     # A household phone connected to the backyard AP = someone is outside.
     ap_presence:
-      ap_mac: "ac:8b:a9:de:1a:68"
+      ap_name: "Backyard AP"
       person_entities:
         - person.stefan_slivinski
         - person.megan
