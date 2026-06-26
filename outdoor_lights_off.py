@@ -1,4 +1,4 @@
-"""Outdoor Lights Off — AppDaemon app.
+"""Outdoor Lights Off - AppDaemon app.
 
 Turns off a configurable set of outdoor lights/switches at a scheduled time
 each night, but defers the shut-off while someone is still outside. "Outside"
@@ -13,7 +13,7 @@ on. As soon as everyone has gone inside (and all watched doors are closed) the
 lights are turned off. A short debounce avoids flapping when a phone briefly
 drops off the AP.
 
-No entity IDs are hardcoded — everything comes from the app's YAML config.
+No entity IDs are hardcoded - everything comes from the app's YAML config.
 """
 
 import appdaemon.plugins.hass.hassapi as hass
@@ -81,7 +81,7 @@ class OutdoorLightsOff(hass.Hass):
         # time, arm immediately so a restart doesn't skip the night.
         if self._within_off_window():
             self.armed = True
-            self.log("Started within the off-window — arming immediately.")
+            self.log("Started within the off-window - arming immediately.")
             self._evaluate("startup")
 
         self.log(
@@ -97,14 +97,14 @@ class OutdoorLightsOff(hass.Hass):
     # ------------------------------------------------------------------ #
     def _on_off_time(self, kwargs):
         self.armed = True
-        self.log("Off-time reached — arming.")
+        self.log("Off-time reached - arming.")
         self._evaluate("off_time")
 
     def _on_reset_time(self, kwargs):
         # Hard failsafe: unconditionally force everything off at reset time,
         # regardless of presence or reported state. This replaces the old
         # standalone "4am" HA automation.
-        self.log("Reset-time reached — forcing all outdoor lights off (failsafe).")
+        self.log("Reset-time reached - forcing all outdoor lights off (failsafe).")
         self._force_off_all()
         self.armed = False
         self._cancel_pending()
@@ -127,9 +127,9 @@ class OutdoorLightsOff(hass.Hass):
             return
 
         if self.someone_outside():
-            # Still occupied — cancel any pending shut-off and wait.
+            # Still occupied - cancel any pending shut-off and wait.
             if self._pending_handle is not None:
-                self.log("Someone came back outside — cancelling pending shut-off.")
+                self.log("Someone came back outside - cancelling pending shut-off.")
                 self._cancel_pending()
             return
 
@@ -149,7 +149,7 @@ class OutdoorLightsOff(hass.Hass):
         if not self.armed:
             return
         if self.someone_outside():
-            self.log("Someone outside again at confirm time — staying on.")
+            self.log("Someone outside again at confirm time - staying on.")
             return
         self._shutoff()
 

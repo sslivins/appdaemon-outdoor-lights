@@ -1,7 +1,7 @@
 # appdaemon-outdoor-lights
 
 An [AppDaemon](https://appdaemon.readthedocs.io/) app for Home Assistant that
-turns off a set of outdoor lights/switches at a scheduled time each night — but
+turns off a set of outdoor lights/switches at a scheduled time each night - but
 **defers the shut-off while someone is still outside**, and only kills the
 lights once everyone has gone in.
 
@@ -13,19 +13,19 @@ lights once everyone has gone in.
 - At `off_time` (default **22:00**) the app *arms*.
 - It will not turn the lights off while **someone is outside**. "Outside" is
   detected by two configurable signals:
-  1. **AP presence** — a household member's phone is connected to a specific
+  1. **AP presence** - a household member's phone is connected to a specific
      access point, matched by the device_tracker's `ap_mac` attribute (this
      replicates a common Home Assistant template-sensor pattern, in Python).
-  2. **Door sensors** — one or more doors are open.
+  2. **Door sensors** - one or more doors are open.
 - As soon as nobody is outside (and all watched doors are closed), the lights
   turn off. A short debounce (`clear_delay_seconds`) rides out brief AP
-  drop-offs so a phone momentarily losing Wi‑Fi doesn't cause a false shut-off.
+  drop-offs so a phone momentarily losing Wi-Fi doesn't cause a false shut-off.
 - At `reset_time` (default **04:00**) the app **force-offs everything
   unconditionally** as a hard failsafe, then disarms for the day.
 - If AppDaemon (re)starts after `off_time` but before `reset_time`, the app
   arms immediately so a restart never skips the night.
 
-No entity IDs are hardcoded in the Python — everything comes from the YAML.
+No entity IDs are hardcoded in the Python - everything comes from the YAML.
 
 ## Installation
 
