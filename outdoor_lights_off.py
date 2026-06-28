@@ -22,7 +22,7 @@ No entity IDs are hardcoded - everything comes from the app's YAML config.
 """
 
 import appdaemon.plugins.hass.hassapi as hass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from home_lib import PresenceMixin, ControllerClient
 
@@ -31,8 +31,14 @@ class OutdoorLightsOff(PresenceMixin, hass.Hass):
 
     def initialize(self):
         # --- Schedule ---------------------------------------------------
-        self.off_time = self.parse_time(self.args.get("off_time", "22:00:00"))
+        # off_time is the latest "cap" the sweep ever arms at. When
+        # off_sunset_offset is set, the sweep instead arms at the *earlier* of
+        # (sunset + offset) and this cap - so it eases earlier in winter (when
+        # sunset is early) while still capping summer at this time.
+        self.off_time_cap = self.parse_time(self.args.get("off_time", "22:00:00"))
         self.reset_time = self.parse_time(self.args.get("reset_time", "04:00:00"))
+        self.off_offset_seconds = self._parse_offset(
+            self.args.get("off_sunset_offset"))
         self.clear_delay = int(self.args.get("clear_delay_seconds", 120))
         self.poll_interval = int(self.args.get("poll_interval_seconds", 60))
         # How long a sweep off-request stays valid while waiting out a courtesy
@@ -77,7 +83,12 @@ class OutdoorLightsOff(PresenceMixin, hass.Hass):
         self._presence_held = False  # whether sweep:presence holds are placed
 
         # --- Wiring ------------------------------------------------------
-        self.run_daily(self._on_off_time, self.off_time)
+        # Arm at the cap every night; if a sunset offset is configured, also arm
+        # at sunset+offset. Whichever fires first arms (the handler is
+        # idempotent), giving an effective off time of min(cap, sunset+offset).
+        self.run_daily(self._on_off_time, self.off_time_cap)
+        if self.off_offset_seconds is not None:
+            self.run_at_sunset(self._on_off_time, offset=self.off_offset_seconds)
         self.run_daily(self._on_reset_time, self.reset_time)
 
         for d in self.door_sensors:
@@ -110,9 +121,13 @@ class OutdoorLightsOff(PresenceMixin, hass.Hass):
             self._evaluate("startup")
 
         self.log(
-            "Initialized. off_time=%s reset_time=%s lights=%d door_sensors=%d "
-            "persons=%d ap=%s"
-            % (self.off_time, self.reset_time, len(self.lights),
+            "Initialized. off_time=%s (cap=%s sunset_offset=%s) reset_time=%s "
+            "lights=%d door_sensors=%d persons=%d ap=%s"
+            % (self._compute_off_time().strftime("%H:%M:%S"),
+               self.off_time_cap,
+               ("%ds" % self.off_offset_seconds)
+               if self.off_offset_seconds is not None else "<none>",
+               self.reset_time, len(self.lights),
                len(self.door_sensors), len(self.person_entities),
                self.ap or "<none>")
         )
@@ -121,8 +136,14 @@ class OutdoorLightsOff(PresenceMixin, hass.Hass):
     # Scheduling callbacks
     # ------------------------------------------------------------------ #
     def _on_off_time(self, kwargs):
+        # Fired by both the cap (run_daily) and, if configured, sunset+offset
+        # (run_at_sunset). Idempotent: whichever lands first arms for the night;
+        # the later one is a no-op. _on_reset_time disarms each morning.
+        if self.armed:
+            return
         self.armed = True
-        self.log("Off-time reached - arming.")
+        self.log("Off-time reached (%s) - arming."
+                 % self._compute_off_time().strftime("%H:%M"))
         self._evaluate("off_time")
 
     def _on_reset_time(self, kwargs):
@@ -252,12 +273,32 @@ class OutdoorLightsOff(PresenceMixin, hass.Hass):
     # ------------------------------------------------------------------ #
     # Helpers
     # ------------------------------------------------------------------ #
+    def _compute_off_time(self):
+        """Today's effective off time-of-day: min(cap, sunset + offset).
+
+        The cap (<= 22:00) guarantees the result never wraps past midnight, so
+        it is always a clean evening time-of-day usable by _within_off_window.
+        Falls back to the cap if no offset is set or sunset can't be resolved.
+        """
+        if self.off_offset_seconds is None:
+            return self.off_time_cap
+        try:
+            today = self.datetime().date()
+            sunset_t = self.parse_time("sunset")
+        except Exception:  # noqa: BLE001
+            return self.off_time_cap
+        cand = (datetime.combine(today, sunset_t)
+                + timedelta(seconds=self.off_offset_seconds))
+        cap_dt = datetime.combine(today, self.off_time_cap)
+        return min(cand, cap_dt).time()
+
     def _within_off_window(self):
         now = self.time()
-        if self.off_time <= self.reset_time:
-            return self.off_time <= now < self.reset_time
+        off_time = self._compute_off_time()
+        if off_time <= self.reset_time:
+            return off_time <= now < self.reset_time
         # Window wraps past midnight (e.g. 22:00 -> 04:00).
-        return now >= self.off_time or now < self.reset_time
+        return now >= off_time or now < self.reset_time
 
     def _cancel_pending(self):
         if self._pending_handle is not None:
@@ -266,6 +307,23 @@ class OutdoorLightsOff(PresenceMixin, hass.Hass):
             except Exception:  # noqa: BLE001
                 pass
             self._pending_handle = None
+
+    @staticmethod
+    def _parse_offset(value):
+        """Parse an offset into seconds. Accepts None (-> None), a number of
+        seconds, or an "HH:MM[:SS]" duration string."""
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return int(value)
+        s = str(value).strip()
+        if not s:
+            return None
+        parts = [int(p) for p in s.split(":")]
+        while len(parts) < 3:
+            parts.append(0)
+        h, m, sec = parts[0], parts[1], parts[2]
+        return h * 3600 + m * 60 + sec
 
     @staticmethod
     def _as_list(value):

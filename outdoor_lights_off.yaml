@@ -10,7 +10,14 @@ outdoor_lights_off:
 
   # When to start trying to shut the lights off each night. At reset_time the
   # app force-offs everything unconditionally (hard failsafe) and disarms.
+  #
+  # off_time is the latest "cap". With off_sunset_offset set, the sweep arms at
+  # the earlier of (sunset + off_sunset_offset) and off_time - so it eases
+  # earlier through fall/winter (early sunset) while summer stays capped at
+  # off_time. Here: summer = 22:00; deep winter ~ sunset(~16:15) + 4h ~ 20:15.
+  # Remove off_sunset_offset for a plain fixed 22:00 every night.
   off_time: "22:00:00"
+  off_sunset_offset: "04:00:00"
   reset_time: "04:00:00"
 
   # Wait this long after everyone goes inside before actually turning off
