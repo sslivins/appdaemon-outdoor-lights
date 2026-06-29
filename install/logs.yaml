@@ -1,0 +1,7 @@
+  outdoor_lights_off_log:
+    name: OutdoorLights
+    filename: /conf/apps/outdoor_lights_off/outdoor_lights_off.log
+    log_size: 1048576       # 1 MB per file
+    log_generations: 10     # keep 10 rotated files
+    format: "{asctime}.{msecs:03.0f} {levelname:<7} {message}"
+    date_format: "%Y-%m-%d %H:%M:%S"
